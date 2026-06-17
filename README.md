@@ -4,7 +4,7 @@ A browser-based feasibility explorer for aircraft configurations. Pick a vehicle
 
 No installation. No backend. Open the file and it works.
 
-**[Try it live →](https://samriddha-guragain.github.io/aeroframe)**
+**[Try it live →](https://samriddha-guragain.github.io/Aeroframe)**
 
 
 
