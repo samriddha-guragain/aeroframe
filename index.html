@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aero Frame — Feasibility Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#F7F8FA;
+    --surface:#FFFFFF;
+    --border:#E3E7EC;
+    --text:#1A2330;
+    --text-muted:#6B7785;
+    --accent:#3D5A80;
+    --accent-soft:#EAF0F6;
+    --feasible:#2E7D5B;
+    --marginal:#F2A900;
+    --infeasible:#C4453C;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+
+  /* ---------- Selector ---------- */
+  .selector-intro{
+    margin-bottom:28px;
+  }
+
+  .selector-intro h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:28px;
+    letter-spacing:-0.02em;
+    margin-bottom:6px;
+  }
+
+  .selector-intro p{
+    color:var(--text-muted);
+    font-size:14px;
+    max-width:520px;
+  }
+
+  .type-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+
+  @media (max-width:640px){
+    .type-grid{ grid-template-columns:1fr; }
+  }
+
+  .type-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:22px;
+    text-align:left;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+    transition:border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .type-card:hover{
+    border-color:var(--accent);
+    transform:translateY(-2px);
+    box-shadow:0 6px 18px rgba(26,35,48,0.06);
+  }
+
+  .type-card svg{
+    color:var(--accent);
+    width:40px; height:40px;
+    margin-bottom:14px;
+  }
+
+  .type-card h3{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:17px;
+    font-weight:600;
+    margin-bottom:6px;
+  }
+
+  .type-card p{
+    font-size:13px;
+    color:var(--text-muted);
+  }
+
+  /* ---------- Configurator ---------- */
+  #app{ display:none; }
+
+  .back-link{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:13px;
+    font-weight:500;
+    color:var(--text-muted);
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:0;
+    margin-bottom:16px;
+    font-family:'Inter', sans-serif;
+  }
+
+  .back-link:hover{ color:var(--accent); }
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:24px;
+    padding-bottom:24px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:28px;
+  }
+
+  .title-block h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:26px;
+    letter-spacing:-0.02em;
+  }
+
+  .title-block p{
+    color:var(--text-muted);
+    font-size:14px;
+    margin-top:4px;
+    max-width:480px;
+  }
+
+  .gauge-block{
+    min-width:220px;
+    text-align:right;
+  }
+
+  .gauge-label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--text-muted);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+
+  .gauge-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:24px;
+    font-weight:600;
+    margin-bottom:8px;
+  }
+
+  .gauge-track{
+    height:8px;
+    width:220px;
+    background:var(--accent-soft);
+    border-radius:99px;
+    overflow:hidden;
+    margin-left:auto;
+  }
+
+  .gauge-fill{
+    height:100%;
+    border-radius:99px;
+    transition:width 0.25s ease, background 0.25s ease;
+    width:0%;
+  }
+
+  main{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+
+  @media (max-width:760px){
+    main{ grid-template-columns:1fr; }
+    .gauge-block{ text-align:left; }
+    .gauge-track{ margin-left:0; }
+    header{ align-items:flex-start; }
+  }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:24px;
+  }
+
+  .panel h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-muted);
+    margin-bottom:18px;
+  }
+
+  .panel-note{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+
+  /* Params */
+  .param{ margin-bottom:22px; }
+  .param:last-child{ margin-bottom:0; }
+
+  .param-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:8px;
+    font-size:14px;
+  }
+
+  .param-row span:last-child{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:14px;
+    color:var(--accent);
+  }
+
+  input[type=range]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:4px;
+    background:var(--border);
+    border-radius:2px;
+    accent-color:var(--accent);
+  }
+
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:var(--accent);
+    border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border);
+    cursor:pointer;
+  }
+
+  input[type=range]::-moz-range-thumb{
+    width:16px; height:16px;
+    border-radius:50%;
+    background:var(--accent);
+    border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border);
+    cursor:pointer;
+  }
+
+  /* Results */
+  .metric{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:4px 12px;
+    align-items:center;
+    padding:12px 0;
+    border-bottom:1px solid var(--border);
+  }
+
+  .metric:last-child{ border-bottom:none; }
+
+  .metric-label{ font-size:14px; }
+
+  .metric-sub{
+    font-size:12px;
+    color:var(--text-muted);
+    grid-column:1;
+  }
+
+  .metric-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:15px;
+    text-align:right;
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    font-weight:600;
+    padding:4px 10px;
+    border-radius:99px;
+    grid-column:2;
+    justify-self:end;
+  }
+
+  .pill::before{
+    content:'';
+    width:7px; height:7px;
+    border-radius:50%;
+  }
+
+  .pill.feasible{ background:#EAF6F0; color:var(--feasible); }
+  .pill.feasible::before{ background:var(--feasible); }
+  .pill.marginal{ background:#FDF3DD; color:#8A6300; }
+  .pill.marginal::before{ background:var(--marginal); }
+  .pill.infeasible{ background:#FBEAE8; color:var(--infeasible); }
+  .pill.infeasible::before{ background:var(--infeasible); }
+
+  /* Comparison */
+  .comparison{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:24px;
+    margin-top:20px;
+  }
+
+  .comparison h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+
+  .comparison .note{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:16px;
+  }
+
+  .chart-wrap{
+    max-width:480px;
+    margin:0 auto;
+  }
+
+  .legend{
+    display:flex;
+    justify-content:center;
+    gap:24px;
+    flex-wrap:wrap;
+    margin-top:14px;
+    font-size:13px;
+  }
+
+  .legend-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  .legend-dot{
+    width:10px; height:10px;
+    border-radius:50%;
+  }
+
+  footer{
+    text-align:center;
+    color:var(--text-muted);
+    font-size:12px;
+    margin-top:32px;
+  }
+
+  /* ---- STOL-specific ---- */
+  .stol-headline{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+    margin-bottom:20px;
+  }
+
+  .hc{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:18px 20px;
+  }
+
+  .hc-label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.07em;
+    color:var(--text-muted);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+
+  .hc-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:24px;
+    font-weight:600;
+    line-height:1;
+    margin-bottom:4px;
+  }
+
+  .hc-unit{ font-size:13px; color:var(--text-muted); }
+
+  .road-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    font-weight:600;
+    padding:4px 10px;
+    border-radius:99px;
+    margin-top:6px;
+  }
+
+  .road-badge::before{ content:''; width:7px; height:7px; border-radius:50%; }
+  .road-badge.feasible{ background:#EAF6F0; color:var(--feasible); }
+  .road-badge.feasible::before{ background:var(--feasible); }
+  .road-badge.marginal{ background:#FDF3DD; color:#8A6300; }
+  .road-badge.marginal::before{ background:var(--marginal); }
+  .road-badge.infeasible{ background:#FBEAE8; color:var(--infeasible); }
+  .road-badge.infeasible::before{ background:var(--infeasible); }
+
+  .wing-toggle{
+    display:flex;
+    gap:8px;
+    margin-bottom:20px;
+  }
+
+  .wing-btn{
+    flex:1;
+    padding:8px;
+    font-size:13px;
+    font-weight:600;
+    font-family:'Inter', sans-serif;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--surface);
+    color:var(--text-muted);
+    cursor:pointer;
+    transition:all 0.15s ease;
+  }
+
+  .wing-btn.active{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+
+  #stolHeadline{ display:none; }
+  #stolWingToggle{ display:none; }
+
+  @media(max-width:640px){
+    .stol-headline{ grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ---------- Selector ---------- -->
+  <div id="selector">
+    <div class="selector-intro">
+      <h1>Roadcraft-Aero</h1>
+      <p>Pick the kind of aircraft you're working with. Each type gets its own inputs and feasibility model.</p>
+    </div>
+    <div class="type-grid" id="typeGrid"></div>
+  </div>
+
+  <!-- ---------- Configurator ---------- -->
+  <div id="app">
+    <button class="back-link" id="backBtn">&larr; Choose a different type</button>
+
+    <header>
+      <div class="title-block">
+        <h1 id="typeTitle"></h1>
+        <p id="typeTagline"></p>
+      </div>
+      <div class="gauge-block">
+        <div class="gauge-label">Overall feasibility</div>
+        <div class="gauge-value" id="gaugeValue">—</div>
+        <div class="gauge-track"><div class="gauge-fill" id="gaugeFill"></div></div>
+      </div>
+    </header>
+
+    <!-- STOL headline cards (shown only for STOL type) -->
+    <div id="stolHeadline" class="stol-headline">
+      <div class="hc">
+        <div class="hc-label">Takeoff roll</div>
+        <div class="hc-value" id="hTakeoff">—</div>
+        <div class="hc-unit">metres</div>
+      </div>
+      <div class="hc">
+        <div class="hc-label">Cruise range</div>
+        <div class="hc-value" id="hRange">—</div>
+        <div class="hc-unit">km</div>
+      </div>
+      <div class="hc">
+        <div class="hc-label">Road mode</div>
+        <div class="hc-value" id="hRoadWidth" style="font-size:18px;margin-top:4px;">—</div>
+        <div id="hRoadBadge"></div>
+      </div>
+    </div>
+
+    <main>
+      <section class="panel">
+        <h2>Configuration</h2>
+        <div id="stolWingToggle" class="wing-toggle">
+          <button class="wing-btn active" id="btnFolded" onclick="setWingMode('folded')">Wings folded (road)</button>
+          <button class="wing-btn" id="btnExtended" onclick="setWingMode('extended')">Wings extended (flight)</button>
+        </div>
+        <div id="paramsBody"></div>
+        <div class="panel-note" id="assumptionsNote"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Computed results</h2>
+        <div id="resultsBody"></div>
+      </section>
+    </main>
+
+    <section class="comparison">
+      <h2>Configuration comparison</h2>
+      <p class="note" id="comparisonNote"></p>
+      <div class="chart-wrap"><canvas id="radar"></canvas></div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <footer>Samriddha Guragain — Roadcraft-Aero</footer>
+  </div>
+
+</div>
+
+<script>
+/* ============ Shared constants & helpers ============ */
+const RHO = 1.225;
+const G = 9.81;
+const FOM = 0.7;
+const USABLE_FRACTION = 0.8;
+
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+function scoreInRange(v, lo, hi, falloff){
+  if(v >= lo && v <= hi) return 100;
+  if(v < lo) return clamp((v / lo) * 100, 0, 100);
+  return clamp(100 - ((v - hi) / falloff) * 100, 0, 100);
+}
+
+function statusFromScore(score){
+  if(score >= 70) return 'feasible';
+  if(score >= 40) return 'marginal';
+  return 'infeasible';
+}
+
+function statusLabel(status){
+  return status === 'feasible' ? 'Feasible' : status === 'marginal' ? 'Marginal' : 'Not feasible';
+}
+
+function gaugeColor(score){
+  if(score >= 70) return 'var(--feasible)';
+  if(score >= 40) return 'var(--marginal)';
+  return 'var(--infeasible)';
+}
+
+/* ============ Icons ============ */
+const ICONS = {
+  plane: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24 4 L24 44"/>
+    <path d="M24 16 L4 27 L8 30 L24 23"/>
+    <path d="M24 23 L40 30 L44 27 L24 16"/>
+    <path d="M18 40 L24 36 L30 40"/>
+  </svg>`,
+  heli: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="4" y1="9" x2="44" y2="9"/>
+    <line x1="24" y1="9" x2="24" y2="17"/>
+    <ellipse cx="22" cy="27" rx="11" ry="6"/>
+    <path d="M33 29 L44 33"/>
+    <circle cx="44" cy="33" r="2.5"/>
+    <line x1="18" y1="33" x2="14" y2="38"/>
+    <line x1="26" y1="33" x2="30" y2="38"/>
+  </svg>`,
+  multirotor: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="24" cy="24" r="4"/>
+    <line x1="24" y1="24" x2="9" y2="9"/>
+    <line x1="24" y1="24" x2="39" y2="9"/>
+    <line x1="24" y1="24" x2="9" y2="39"/>
+    <line x1="24" y1="24" x2="39" y2="39"/>
+    <circle cx="9" cy="9" r="5"/>
+    <circle cx="39" cy="9" r="5"/>
+    <circle cx="9" cy="39" r="5"/>
+    <circle cx="39" cy="39" r="5"/>
+  </svg>`,
+  tiltrotor: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="5" y1="24" x2="43" y2="24"/>
+    <line x1="14" y1="9" x2="14" y2="39"/>
+    <circle cx="14" cy="9" r="4"/>
+    <circle cx="14" cy="39" r="4"/>
+    <line x1="35" y1="15" x2="35" y2="33"/>
+    <circle cx="35" cy="15" r="4"/>
+    <circle cx="35" cy="33" r="4"/>
+  </svg>`,
+  stol: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="20" cy="26" rx="9" ry="5"/>
+    <path d="M29 26 L44 26"/>
+    <path d="M11 26 L4 26"/>
+    <path d="M20 21 L20 10 L28 14"/>
+    <path d="M14 31 L10 38"/>
+    <path d="M26 31 L30 38"/>
+    <path d="M20 21 L8 25 L10 27"/>
+    <path d="M20 21 L32 25 L30 27"/>
+    <line x1="4" y1="40" x2="44" y2="40"/>
+    <line x1="4" y1="38" x2="4" y2="42"/>
+    <line x1="44" y1="38" x2="44" y2="42"/>
+  </svg>`
+};
+
+/* ============ Vehicle type definitions ============ */
+const VEHICLE_TYPES = {
+
+  plane: {
+    name: 'Fixed-wing',
+    tagline: 'Wings carry the weight in cruise; a propeller or engine provides thrust. Needs runway distance.',
+    icon: ICONS.plane,
+    assumptions: 'Stall speed assumes CL,max = 1.4. Cruise L/D is estimated from aspect ratio as 4.54·√AR, capped between 6 and 20.',
+    params: [
+      {id:'weight', label:'Gross weight', min:300, max:2500, step:10, default:900, format:v=>`${v} kg`},
+      {id:'wingspan', label:'Wingspan', min:5, max:15, step:0.1, default:10, format:v=>`${v.toFixed(1)} m`},
+      {id:'wingArea', label:'Wing area', min:6, max:25, step:0.5, default:12, format:v=>`${v.toFixed(1)} m²`},
+      {id:'power', label:'Engine power', min:20, max:300, step:5, default:100, format:v=>`${v} kW`},
+      {id:'battery', label:'Battery capacity', min:10, max:200, step:5, default:60, format:v=>`${v} kWh`},
+      {id:'speed', label:'Cruise speed target', min:100, max:400, step:5, default:200, format:v=>`${v} km/h`}
+    ],
+    compute(p){
+      const wingLoading = p.weight / p.wingArea;
+      const AR = (p.wingspan * p.wingspan) / p.wingArea;
+      const LD = clamp(4.54 * Math.sqrt(AR), 6, 20);
+      const stallSpeedMs = Math.sqrt((2 * p.weight * G) / (RHO * p.wingArea * 1.4));
+      const stallSpeedKmh = stallSpeedMs * 3.6;
+      const dragN = (p.weight * G) / LD;
+      const cruisePowerKW = (dragN * (p.speed / 3.6)) / 1000;
+      const powerMargin = p.power / cruisePowerKW;
+      const usableEnergy = p.battery * USABLE_FRACTION;
+      const enduranceHr = usableEnergy / cruisePowerKW;
+      const range = enduranceHr * p.speed;
+      const stallRatio = p.speed / stallSpeedKmh;
+
+      const wingLoadingScore = scoreInRange(wingLoading, 50, 150, 200);
+      const stallScore = clamp(((stallRatio - 1.0) / 0.6) * 100, 0, 100);
+      const powerScore = clamp(((powerMargin - 1.0) / 0.6) * 100, 0, 100);
+      const rangeScore = clamp((range / 150) * 100, 0, 100);
+      const overall = (wingLoadingScore + stallScore + powerScore + rangeScore) / 4;
+
+      return { wingLoading, AR, LD, stallSpeedKmh, stallRatio, cruisePowerKW, powerMargin,
+               enduranceHr, range, wingLoadingScore, stallScore, powerScore, rangeScore, overall };
+    },
+    results(m){
+      return [
+        {label:'Wing loading', value:`${m.wingLoading.toFixed(1)} kg/m²`, sub:'optimal 50–150 kg/m²', score:m.wingLoadingScore},
+        {label:'Estimated L/D', value:`${m.LD.toFixed(1)}`, sub:`aspect ratio ${m.AR.toFixed(1)}`},
+        {label:'Stall speed', value:`${m.stallSpeedKmh.toFixed(0)} km/h`},
+        {label:'Stall margin', value:`×${m.stallRatio.toFixed(2)}`, sub:'cruise vs stall speed', score:m.stallScore},
+        {label:'Cruise power required', value:`${m.cruisePowerKW.toFixed(1)} kW`},
+        {label:'Power margin', value:`×${m.powerMargin.toFixed(2)}`, score:m.powerScore},
+        {label:'Endurance', value:`${m.enduranceHr.toFixed(2)} hr`},
+        {label:'Range', value:`${m.range.toFixed(0)} km`, score:m.rangeScore}
+      ];
+    },
+    radar: {
+      labels:['Wing loading','Power/weight','Range','Cruise speed','Gross weight'],
+      you(p,m){ return [m.wingLoading, p.power/p.weight, m.range, p.speed, p.weight]; },
+      refs:[
+        {name:'Cessna 172', color:'#9DB4D0', values:[68.6, 0.121, 1185, 226, 1111]},
+        {name:'Pipistrel Velis Electro', color:'#D8C28B', values:[63.1, 0.096, 125, 150, 600]}
+      ]
+    }
+  },
+
+  heli: {
+    name: 'Helicopter',
+    tagline: 'A single large rotor provides lift and control. Efficient hover, moderate cruise speed.',
+    icon: ICONS.heli,
+    assumptions: 'Hover power uses momentum theory with a rotor figure of merit of 0.7. Cruise power is modeled as 80% of hover power.',
+    params: [
+      {id:'weight', label:'Gross weight', min:400, max:3000, step:10, default:1000, format:v=>`${v} kg`},
+      {id:'rotorDiameter', label:'Main rotor diameter', min:4, max:14, step:0.1, default:8, format:v=>`${v.toFixed(1)} m`},
+      {id:'power', label:'Engine power', min:50, max:600, step:5, default:150, format:v=>`${v} kW`},
+      {id:'battery', label:'Battery / fuel energy', min:20, max:400, step:5, default:100, format:v=>`${v} kWh`},
+      {id:'speed', label:'Cruise speed target', min:80, max:300, step:5, default:180, format:v=>`${v} km/h`}
+    ],
+    compute(p){
+      const area = Math.PI * Math.pow(p.rotorDiameter/2, 2);
+      const diskLoading = p.weight / area;
+      const thrust = p.weight * G;
+      const hoverPowerIdealW = thrust * Math.sqrt(thrust / (2 * RHO * area));
+      const hoverPowerActualW = hoverPowerIdealW / FOM;
+      const hoverPowerActualKW = hoverPowerActualW / 1000;
+      const hoverMargin = (p.power * 1000) / hoverPowerActualW;
+      const cruisePowerKW = hoverPowerActualKW * 0.8;
+      const usableEnergy = p.battery * USABLE_FRACTION;
+      const enduranceHr = usableEnergy / cruisePowerKW;
+      const range = enduranceHr * p.speed;
+
+      const diskLoadingScore = scoreInRange(diskLoading, 8, 35, 30);
+      const hoverScore = clamp(((hoverMargin - 0.8) / 0.7) * 100, 0, 100);
+      const rangeScore = clamp((range / 300) * 100, 0, 100);
+      const overall = (diskLoadingScore + hoverScore + rangeScore) / 3;
+
+      return { diskLoading, hoverPowerActualKW, hoverMargin, cruisePowerKW, enduranceHr, range,
+               diskLoadingScore, hoverScore, rangeScore, overall };
+    },
+    results(m){
+      return [
+        {label:'Disk loading', value:`${m.diskLoading.toFixed(1)} kg/m²`, sub:'optimal 8–35 kg/m²', score:m.diskLoadingScore},
+        {label:'Hover power required', value:`${m.hoverPowerActualKW.toFixed(1)} kW`},
+        {label:'Hover margin', value:`×${m.hoverMargin.toFixed(2)}`, score:m.hoverScore},
+        {label:'Cruise power (est.)', value:`${m.cruisePowerKW.toFixed(1)} kW`},
+        {label:'Endurance', value:`${m.enduranceHr.toFixed(2)} hr`},
+        {label:'Range', value:`${m.range.toFixed(0)} km`, score:m.rangeScore}
+      ];
+    },
+    radar: {
+      labels:['Disk loading','Power/weight','Range','Cruise speed','Gross weight'],
+      you(p,m){ return [m.diskLoading, p.power/p.weight, m.range, p.speed, p.weight]; },
+      refs:[
+        {name:'Robinson R22', color:'#9DB4D0', values:[13.5, 0.153, 386, 180, 622]},
+        {name:'Robinson R44', color:'#D8C28B', values:[13.7, 0.151, 560, 200, 1089]}
+      ]
+    }
+  },
+
+  multirotor: {
+    name: 'Multirotor',
+    tagline: 'Multiple small rotors provide lift directly. Simple to control, power-hungry at scale.',
+    icon: ICONS.multirotor,
+    assumptions: 'Hover power uses momentum theory with a rotor figure of merit of 0.7. Cruise power is modeled as 42% of hover power.',
+    params: [
+      {id:'weight', label:'Gross weight', min:500, max:3000, step:10, default:1200, format:v=>`${v} kg`},
+      {id:'rotors', label:'Rotor count', min:2, max:8, step:1, default:4, format:v=>`${v}`},
+      {id:'rotorDiameter', label:'Rotor diameter', min:0.8, max:3.0, step:0.05, default:1.8, format:v=>`${v.toFixed(2)} m`},
+      {id:'power', label:'Total motor power', min:20, max:400, step:5, default:120, format:v=>`${v} kW`},
+      {id:'battery', label:'Battery capacity', min:20, max:300, step:5, default:80, format:v=>`${v} kWh`},
+      {id:'speed', label:'Cruise speed target', min:80, max:400, step:5, default:200, format:v=>`${v} km/h`}
+    ],
+    compute(p){
+      const area = p.rotors * Math.PI * Math.pow(p.rotorDiameter/2, 2);
+      const diskLoading = p.weight / area;
+      const thrust = p.weight * G;
+      const hoverPowerIdealW = thrust * Math.sqrt(thrust / (2 * RHO * area));
+      const hoverPowerActualW = hoverPowerIdealW / FOM;
+      const hoverPowerActualKW = hoverPowerActualW / 1000;
+      const hoverMargin = (p.power * 1000) / hoverPowerActualW;
+      const cruisePowerKW = hoverPowerActualKW * 0.42;
+      const usableEnergy = p.battery * USABLE_FRACTION;
+      const enduranceHr = usableEnergy / cruisePowerKW;
+      const range = enduranceHr * p.speed;
+
+      const diskLoadingScore = scoreInRange(diskLoading, 40, 160, 100);
+      const hoverScore = clamp(((hoverMargin - 0.8) / 0.7) * 100, 0, 100);
+      const rangeScore = clamp((range / 150) * 100, 0, 100);
+      const overall = (diskLoadingScore + hoverScore + rangeScore) / 3;
+
+      return { diskLoading, hoverPowerActualKW, hoverMargin, cruisePowerKW, enduranceHr, range,
+               diskLoadingScore, hoverScore, rangeScore, overall };
+    },
+    results(m){
+      return [
+        {label:'Disk loading', value:`${m.diskLoading.toFixed(1)} kg/m²`, sub:'optimal 40–160 kg/m²', score:m.diskLoadingScore},
+        {label:'Hover power required', value:`${m.hoverPowerActualKW.toFixed(1)} kW`},
+        {label:'Hover margin', value:`×${m.hoverMargin.toFixed(2)}`, score:m.hoverScore},
+        {label:'Cruise power (est.)', value:`${m.cruisePowerKW.toFixed(1)} kW`},
+        {label:'Endurance', value:`${m.enduranceHr.toFixed(2)} hr`},
+        {label:'Range', value:`${m.range.toFixed(0)} km`, score:m.rangeScore}
+      ];
+    },
+    radar: {
+      labels:['Disk loading','Power/weight','Range','Cruise speed','Gross weight'],
+      you(p,m){ return [m.diskLoading, p.power/p.weight, m.range, p.speed, p.weight]; },
+      refs:[
+        {name:'EHang 216', color:'#9DB4D0', values:[16.0, 0.308, 35, 130, 650]},
+        {name:'Volocopter VoloCity', color:'#D8C28B', values:[12.0, 0.333, 35, 110, 900]}
+      ]
+    }
+  },
+
+  stol: {
+    name: 'STOL Roadable',
+    tagline: 'Short takeoff and landing aircraft with folding wings — designed to fly and drive. Your dream project.',
+    icon: ICONS.stol,
+    assumptions: 'Stall speed uses CL,max = 1.6 (flaps, STOL config). Takeoff roll uses ground roll equation: µ = 0.04, lift-off at 1.1×Vstall. Cruise L/D estimated from aspect ratio. Road legality threshold: 2.55 m (EU standard).',
+    isSTOL: true,
+    params: [
+      {id:'weight',      label:'Gross weight',        min:300,  max:2500, step:10,   default:800,  format:v=>`${v} kg`},
+      {id:'wingspan',    label:'Wingspan (extended)',  min:5,    max:14,   step:0.1,  default:9,    format:v=>`${v.toFixed(1)} m`},
+      {id:'wingArea',    label:'Wing area',            min:6,    max:22,   step:0.5,  default:11,   format:v=>`${v.toFixed(1)} m²`},
+      {id:'foldedWidth', label:'Folded width (road)',  min:1.5,  max:3.0,  step:0.05, default:2.1,  format:v=>`${v.toFixed(2)} m`},
+      {id:'power',       label:'Engine power',         min:30,   max:300,  step:5,    default:90,   format:v=>`${v} kW`},
+      {id:'battery',     label:'Battery / fuel energy',min:15,   max:250,  step:5,    default:60,   format:v=>`${v} kWh`},
+      {id:'speed',       label:'Cruise speed target',  min:100,  max:350,  step:5,    default:180,  format:v=>`${v} km/h`}
+    ],
+    compute(p){
+      const RHO_S=1.225, G_S=9.81, CL_MAX=1.6, MU=0.04, PROP=0.82, USABLE=0.8;
+      const wingLoading  = p.weight / p.wingArea;
+      const AR           = (p.wingspan * p.wingspan) / p.wingArea;
+      const LD           = clamp(4.54 * Math.sqrt(AR), 6, 18);
+      const stallMs      = Math.sqrt((2*p.weight*G_S)/(RHO_S*p.wingArea*CL_MAX));
+      const stallKmh     = stallMs * 3.6;
+      const liftoffMs    = 1.1 * stallMs;
+      const liftoffKmh   = liftoffMs * 3.6;
+      const thrustN      = (p.power*1000*PROP) / liftoffMs;
+      const weightN      = p.weight * G_S;
+      const liftAtLO     = 0.5*RHO_S*liftoffMs*liftoffMs*p.wingArea*CL_MAX;
+      const friction     = MU*(weightN - liftAtLO);
+      const netForce     = thrustN - friction - (weightN/LD)*0.5;
+      const accel        = Math.max(netForce/p.weight, 0.1);
+      const takeoffRoll  = (liftoffMs*liftoffMs)/(2*accel);
+      const TW           = thrustN/weightN;
+      const dragN        = weightN/LD;
+      const cruisePowerKW= (dragN*(p.speed/3.6))/(1000*PROP);
+      const powerMargin  = p.power/cruisePowerKW;
+      const usableEnergy = p.battery*USABLE;
+      const endHr        = usableEnergy/cruisePowerKW;
+      const range        = endHr*p.speed;
+      const roadOk       = p.foldedWidth <= 2.55;
+      const roadWarn     = p.foldedWidth <= 2.85;
+
+      const scWL      = scoreInRange(wingLoading, 40, 80, 80);
+      const scStall   = clamp(((80-stallKmh)/30)*100, 0, 100);
+      const scTakeoff = clamp(((400-takeoffRoll)/350)*100, 0, 100);
+      const scTW      = scoreInRange(TW, 0.3, 0.9, 0.5);
+      const scPM      = clamp(((powerMargin-1)/0.8)*100, 0, 100);
+      const scRange   = clamp((range/200)*100, 0, 100);
+      const overall   = (scWL+scStall+scTakeoff+scTW+scPM+scRange)/6;
+
+      return { wingLoading, AR, LD, stallKmh, liftoffKmh, takeoffRoll, TW,
+               cruisePowerKW, powerMargin, endHr, range,
+               roadOk, roadWarn, foldedWidth:p.foldedWidth, wingspan:p.wingspan,
+               scWL, scStall, scTakeoff, scTW, scPM, scRange, overall };
+    },
+    results(m){
+      const roadStatus = m.roadOk ? 'feasible' : m.roadWarn ? 'marginal' : 'infeasible';
+      const roadLabel  = m.roadOk ? 'Road legal' : m.roadWarn ? 'Borderline' : 'Overwidth';
+      return [
+        {label:'Wing loading',          value:`${m.wingLoading.toFixed(1)} kg/m²`, sub:'optimal STOL: 40–80 kg/m²', score:m.scWL},
+        {label:'Aspect ratio',          value:m.AR.toFixed(2),                     sub:'higher = more efficient cruise'},
+        {label:'Estimated L/D',         value:m.LD.toFixed(1)},
+        {label:'Stall speed',           value:`${m.stallKmh.toFixed(1)} km/h`,     sub:'flaps down, CL max',          score:m.scStall},
+        {label:'Lift-off speed',        value:`${m.liftoffKmh.toFixed(1)} km/h`,   sub:'1.1 × stall speed'},
+        {label:'Takeoff roll',          value:`${Math.round(m.takeoffRoll)} m`,                                        score:m.scTakeoff},
+        {label:'Thrust-to-weight',      value:m.TW.toFixed(3),                                                         score:m.scTW},
+        {label:'Cruise power required', value:`${m.cruisePowerKW.toFixed(1)} kW`},
+        {label:'Power margin',          value:`×${m.powerMargin.toFixed(2)}`,                                           score:m.scPM},
+        {label:'Endurance',             value:`${m.endHr.toFixed(2)} hr`},
+        {label:'Range',                 value:`${Math.round(m.range)} km`,                                              score:m.scRange},
+        {label:'Road width (folded)',   value:`${m.foldedWidth.toFixed(2)} m`,      sub:'legal limit: 2.55 m',         score: m.roadOk?100:m.roadWarn?50:0}
+      ];
+    },
+    radar: {
+      labels:['Wing loading','Thrust/weight','Range','Cruise speed','Takeoff roll'],
+      you(p,m){ return [m.wingLoading, m.TW, m.range, p.speed, m.takeoffRoll]; },
+      refs:[
+        {name:'Terrafugia Transition', color:'#9DB4D0', values:[53.4, 0.28, 787, 185, 518]},
+        {name:'Zenith STOL CH 750',    color:'#C4916B', values:[38.9, 0.35, 740, 185, 61]},
+        {name:'PAL-V Liberty',         color:'#7DB88C', values:[44.0, 0.30, 400, 180, 165]}
+      ],
+      invertIndex: [false, false, false, false, true]
+    }
+  },
+
+  tiltrotor: {
+    name: 'Hybrid eVTOL',
+    tagline: 'Rotors for vertical lift, wings for efficient cruise — the roadable aircraft configuration.',
+    icon: ICONS.tiltrotor,
+    assumptions: 'Hover power uses momentum theory (figure of merit 0.7). Cruise drag is modeled at a fixed glide ratio of 10:1. Stall speed assumes CL,max = 1.4.',
+    params: [
+      {id:'weight', label:'Gross weight', min:500, max:3000, step:10, default:1200, format:v=>`${v} kg`},
+      {id:'rotors', label:'Lift rotor count', min:2, max:8, step:1, default:6, format:v=>`${v}`},
+      {id:'rotorDiameter', label:'Rotor diameter', min:0.8, max:3.0, step:0.05, default:1.8, format:v=>`${v.toFixed(2)} m`},
+      {id:'wingArea', label:'Wing area', min:2, max:20, step:0.5, default:8, format:v=>`${v.toFixed(1)} m²`},
+      {id:'power', label:'Total motor power', min:50, max:600, step:5, default:300, format:v=>`${v} kW`},
+      {id:'battery', label:'Battery capacity', min:30, max:300, step:5, default:120, format:v=>`${v} kWh`},
+      {id:'speed', label:'Cruise speed target', min:100, max:400, step:5, default:250, format:v=>`${v} km/h`}
+    ],
+    compute(p){
+      const rotorArea = p.rotors * Math.PI * Math.pow(p.rotorDiameter/2, 2);
+      const diskLoading = p.weight / rotorArea;
+      const thrust = p.weight * G;
+      const hoverPowerIdealW = thrust * Math.sqrt(thrust / (2 * RHO * rotorArea));
+      const hoverPowerActualW = hoverPowerIdealW / FOM;
+      const hoverPowerActualKW = hoverPowerActualW / 1000;
+      const hoverMargin = (p.power * 1000) / hoverPowerActualW;
+
+      const wingLoading = p.weight / p.wingArea;
+      const stallSpeedMs = Math.sqrt((2 * p.weight * G) / (RHO * p.wingArea * 1.4));
+      const stallSpeedKmh = stallSpeedMs * 3.6;
+      const stallRatio = p.speed / stallSpeedKmh;
+      const LD = 10;
+      const dragN = (p.weight * G) / LD;
+      const cruisePowerKW = (dragN * (p.speed / 3.6)) / 1000;
+
+      const usableEnergy = p.battery * USABLE_FRACTION;
+      const enduranceHr = usableEnergy / cruisePowerKW;
+      const range = enduranceHr * p.speed;
+
+      const diskLoadingScore = scoreInRange(diskLoading, 40, 160, 100);
+      const hoverScore = clamp(((hoverMargin - 0.8) / 0.7) * 100, 0, 100);
+      const stallScore = clamp(((stallRatio - 1.0) / 0.6) * 100, 0, 100);
+      const rangeScore = clamp((range / 200) * 100, 0, 100);
+      const overall = (diskLoadingScore + hoverScore + stallScore + rangeScore) / 4;
+
+      return { diskLoading, hoverPowerActualKW, hoverMargin, wingLoading, stallSpeedKmh, stallRatio,
+               cruisePowerKW, enduranceHr, range,
+               diskLoadingScore, hoverScore, stallScore, rangeScore, overall };
+    },
+    results(m){
+      return [
+        {label:'Disk loading (VTOL)', value:`${m.diskLoading.toFixed(1)} kg/m²`, sub:'optimal 40–160 kg/m²', score:m.diskLoadingScore},
+        {label:'Hover power required', value:`${m.hoverPowerActualKW.toFixed(1)} kW`},
+        {label:'Hover margin', value:`×${m.hoverMargin.toFixed(2)}`, score:m.hoverScore},
+        {label:'Wing loading (cruise)', value:`${m.wingLoading.toFixed(1)} kg/m²`},
+        {label:'Stall speed', value:`${m.stallSpeedKmh.toFixed(0)} km/h`},
+        {label:'Stall margin', value:`×${m.stallRatio.toFixed(2)}`, sub:'cruise vs stall speed', score:m.stallScore},
+        {label:'Cruise power required', value:`${m.cruisePowerKW.toFixed(1)} kW`},
+        {label:'Endurance', value:`${m.enduranceHr.toFixed(2)} hr`},
+        {label:'Range', value:`${m.range.toFixed(0)} km`, score:m.rangeScore}
+      ];
+    },
+    radar: {
+      labels:['Disk loading','Power/weight','Range','Cruise speed','Gross weight'],
+      you(p,m){ return [m.diskLoading, p.power/p.weight, m.range, p.speed, p.weight]; },
+      refs:[
+        {name:'Joby S4', color:'#9DB4D0', values:[61.5, 0.276, 241, 320, 2177]},
+        {name:'Alef Model A', color:'#D8C28B', values:[243.5, 0.16, 110, 160, 750]}
+      ]
+    }
+  }
+
+};
+
+/* ============ State & rendering ============ */
+let currentType = null;
+let radarChart = null;
+let wingMode = 'folded';
+
+function setWingMode(mode){
+  wingMode = mode;
+  document.getElementById('btnFolded').classList.toggle('active', mode==='folded');
+  document.getElementById('btnExtended').classList.toggle('active', mode==='extended');
+  render();
+}
+
+function buildSelector(){
+  const grid = document.getElementById('typeGrid');
+  Object.entries(VEHICLE_TYPES).forEach(([id, t]) => {
+    const card = document.createElement('button');
+    card.className = 'type-card';
+    card.innerHTML = `${t.icon}<h3>${t.name}</h3><p>${t.tagline}</p>`;
+    card.addEventListener('click', () => selectType(id));
+    grid.appendChild(card);
+  });
+}
+
+function selectType(id){
+  currentType = VEHICLE_TYPES[id];
+  wingMode = 'folded';
+  document.getElementById('selector').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  // Show/hide STOL-specific elements
+  const isSTOL = !!currentType.isSTOL;
+  document.getElementById('stolHeadline').style.display = isSTOL ? 'grid' : 'none';
+  document.getElementById('stolWingToggle').style.display = isSTOL ? 'flex' : 'none';
+  if(isSTOL){
+    document.getElementById('btnFolded').classList.add('active');
+    document.getElementById('btnExtended').classList.remove('active');
+  }
+
+  document.getElementById('typeTitle').textContent = `Roadcraft-Aero — ${currentType.name}`;
+  document.getElementById('typeTagline').textContent = currentType.tagline;
+  document.getElementById('assumptionsNote').textContent = currentType.assumptions;
+  document.getElementById('comparisonNote').textContent =
+    `Normalized against ${currentType.radar.refs.map(r => r.name).join(' and ')} (approximate, illustrative only).`;
+
+  buildParams();
+  buildLegend();
+  render();
+}
+
+function deselectType(){
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('selector').style.display = 'block';
+}
+
+function buildParams(){
+  const panel = document.getElementById('paramsBody');
+  panel.innerHTML = currentType.params.map(d => `
+    <div class="param">
+      <div class="param-row"><span>${d.label}</span><span id="val-${d.id}"></span></div>
+      <input type="range" id="param-${d.id}" min="${d.min}" max="${d.max}" step="${d.step}" value="${d.default}">
+    </div>
+  `).join('');
+
+  currentType.params.forEach(d => {
+    document.getElementById(`param-${d.id}`).addEventListener('input', render);
+  });
+}
+
+function buildLegend(){
+  const legend = document.getElementById('legend');
+  const items = [{name:'Your config', color:'#3D5A80'}, ...currentType.radar.refs];
+  legend.innerHTML = items.map(it =>
+    `<div class="legend-item"><span class="legend-dot" style="background:${it.color}"></span>${it.name}</div>`
+  ).join('');
+}
+
+function renderResults(rows){
+  const panel = document.getElementById('resultsBody');
+  panel.innerHTML = rows.map(r => {
+    const sub = r.sub ? `<div class="metric-sub">${r.sub}</div>` : '';
+    let pill = '';
+    if(r.score !== undefined){
+      const status = statusFromScore(r.score);
+      pill = `<div class="pill ${status}">${statusLabel(status)}</div>`;
+    }
+    return `<div class="metric">
+      <div class="metric-label">${r.label}</div>
+      <div class="metric-value">${r.value}</div>
+      ${sub}${pill}
+    </div>`;
+  }).join('');
+}
+
+function render(){
+  const p = {};
+  currentType.params.forEach(d => {
+    const val = parseFloat(document.getElementById(`param-${d.id}`).value);
+    p[d.id] = val;
+    document.getElementById(`val-${d.id}`).textContent = d.format(val);
+  });
+
+  const m = currentType.compute(p);
+
+  renderResults(currentType.results(m));
+
+  document.getElementById('gaugeValue').textContent = `${Math.round(m.overall)}%`;
+  const fill = document.getElementById('gaugeFill');
+  fill.style.width = `${m.overall}%`;
+  fill.style.background = gaugeColor(m.overall);
+
+  // STOL headline cards
+  if(currentType.isSTOL){
+    document.getElementById('hTakeoff').textContent = Math.round(m.takeoffRoll);
+    document.getElementById('hRange').textContent   = Math.round(m.range);
+    const displayW = wingMode === 'folded' ? m.foldedWidth : m.wingspan;
+    document.getElementById('hRoadWidth').textContent = wingMode === 'folded'
+      ? `${displayW.toFixed(2)} m` : `${displayW.toFixed(1)} m span`;
+    const rs = m.roadOk ? 'feasible' : m.roadWarn ? 'marginal' : 'infeasible';
+    const rl = m.roadOk ? 'Road legal' : m.roadWarn ? 'Borderline' : 'Overwidth';
+    document.getElementById('hRoadBadge').innerHTML =
+      `<span class="road-badge ${rs}">${rl}</span>`;
+  }
+
+  updateRadar(p, m);
+}
+
+function updateRadar(p, m){
+  const radarDef = currentType.radar;
+  const you = radarDef.you(p, m);
+  const refs = radarDef.refs;
+  const invertIndex = radarDef.invertIndex || [];
+
+  const maxes = radarDef.labels.map((_, i) => {
+    const vals = [you[i], ...refs.map(r => r.values[i])];
+    return Math.max(...vals);
+  });
+
+  const norm = arr => arr.map((v, i) => {
+    const n = Math.round((v / maxes[i]) * 100);
+    return invertIndex[i] ? 100 - n : n;
+  });
+
+  const data = {
+    labels: radarDef.labels,
+    datasets: [
+      { label:'Your config', data: norm(you), borderColor:'#3D5A80', backgroundColor:'rgba(61,90,128,0.15)', pointBackgroundColor:'#3D5A80' },
+      ...refs.map(r => ({
+        label: r.name, data: norm(r.values), borderColor: r.color,
+        backgroundColor: r.color + '15', pointBackgroundColor: r.color
+      }))
+    ]
+  };
+
+  const options = {
+    responsive:true,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      r:{
+        min:0, max:100,
+        ticks:{ display:false, stepSize:25 },
+        grid:{ color:'#E3E7EC' },
+        angleLines:{ color:'#E3E7EC' },
+        pointLabels:{ font:{ family:'Inter', size:11 }, color:'#6B7785' }
+      }
+    },
+    animation:{ duration:300 }
+  };
+
+  if(radarChart){
+    radarChart.data = data;
+    radarChart.options = options;
+    radarChart.update();
+  } else {
+    radarChart = new Chart(document.getElementById('radar'), { type:'radar', data, options });
+  }
+}
+
+document.getElementById('backBtn').addEventListener('click', () => {
+  if(radarChart){ radarChart.destroy(); radarChart = null; }
+  deselectType();
+});
+
+buildSelector();
+</script>
+</body>
+</html>
